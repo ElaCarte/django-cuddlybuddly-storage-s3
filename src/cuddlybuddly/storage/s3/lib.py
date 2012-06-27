@@ -280,6 +280,10 @@ class AWSAuthConnection:
 
         is_secure = self.is_secure
         host = "%s:%d" % (server, self.port)
+
+        # record the read position if data is a stream
+        offset = data.tell() if hasattr(data, 'tell') else None
+
         while True:
             if (is_secure):
                 connection = httplib.HTTPSConnection(host)
@@ -306,6 +310,10 @@ class AWSAuthConnection:
             elif scheme == "https": is_secure = False
             else: raise S3Exception("Not http/https: " + location)
             if query: path += "?" + query
+
+            # don't try to keep reading past eof
+            if offset is not None:
+                data.seek(offset)
             # retry with redirect
 
     def _add_aws_auth_header(self, headers, method, bucket, key, query_args):
